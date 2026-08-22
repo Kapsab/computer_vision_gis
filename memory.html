@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>kapsaGIS</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="stylesheet" href="leaflet.css" />
+		<link rel="stylesheet" href="styles.css" />
+	</head>
+	<body>
+		<header class="header">
+			<h1 class="title" style="margin: 0; font-size: 1.75em;">kapsaGIS</h1>
+			<button onclick="openModal('about_modal')">About</button>
+		</header>
+		
+		<div class="progress-container" id="progress_container">
+			<div class="progress-bar" id="progress_bar"></div>
+		</div>
+
+		<main class="main">
+			<!-- Control Dashboard for Vision and Vector Layer Configurations -->
+			<div id="sidebar">
+				<div class="panel-section">
+					<div class="panel-title">1. Computer Vision Capture</div>
+					<label for="imageLoader">Upload Scan/Image Source</label>
+					<input type="file" id="imageLoader" accept="image/*">
+					
+					<!-- FIX: Re-inserted the missing status tracking badge element to prevent js startup crash -->
+					<div style="margin-bottom: 10px;">
+						<span id="vision_engine_badge" class="status-badge badge-waiting">Engine: Loading Dependencies...</span>
+					</div>
+					
+					<div style="display: flex; align-items: center; gap: 10px;">
+						<button id="extractFeaturesBtn" disabled onclick="processImageFeatures()">Extract Polygons</button>
+						<div id="loading_spinner" class="spinner"></div>
+					</div>
+				</div>
+				
+				<div class="panel-section">
+					<div class="panel-title">2. Active Feature Layers</div>
+					<div class="layers-list" id="layers_catalog_container">
+						<div class="no-layers">No layers currently loaded into vector registry space.</div>
+					</div>
+				</div>
+				
+				<div class="panel-section">
+					<div class="panel-title">3. Data Synchronization</div>
+					<button style="width:100%; margin-bottom: 8px;" onclick="triggerImport()">Import GeoJSON File</button>
+					<input type="file" id="geoJsonImporter" accept=".geojson,.json" style="display:none;" onchange="handleImport(event)">
+					<!-- NEW: Cropping/Clipping Processing Control Button Action Hook -->
+					<button style="width:100%; margin-bottom: 8px; background-color:#e67e22;" onclick="toggleCroppingTool()">Crop Layer Coordinates</button>
+					<button style="width:100%; background-color:#2ecc71;" onclick="exportGeoJSON()">Export Active Layer</button>
+				</div>				
+				<canvas id="canvasOutput"></canvas>
+				<img id="imageSrc" style="display:none;" alt="Source Engine Pipeline">
+			</div>
+			
+			<div id="map-wrapper">
+				<!-- FLOATING USER ENGINE: Dynamic Nominatim Geo-Search Component -->
+				<div class="map-search-container">
+					<div class="search-input-group">
+						<input type="text" id="map_spatial_search_input" placeholder="Search cities, land targets or features..." onkeydown="if(event.key==='Enter') executeGeocodingSearch()">
+						<button onclick="executeGeocodingSearch()">Go</button>
+					</div>
+					<div class="search-results-dropdown" id="search_results_dropdown_box"></div>
+				</div> <!-- FIX: Safely closed the map-search-container div wrapper -->
+				
+				<!-- Map sits cleanly next to search bar on the same level -->
+				<div id="map"></div>
+			</div>
+		</main>
+		
+		<footer class="statusbar">
+			<span id="status_text">Status: Booting Engines...</span>
+		</footer>
+
+		<!-- About Modal Window -->
+		<div class="modal" id="about_modal" onclick="closeModalOnBackdrop(event, 'about_modal')">
+			<div class="modal-content">
+				<p class="modal_title">kapsaGIS Engine</p>
+				<hr class="hr_line"/>
+				<p>A web-based GIS platform engineered for feature capture using computer vision extraction, real-time spatial transformations, and attributes indexing.</p>
+				<p>Created by: <strong>Kapsa apps</strong></p>
+				<p>Version: <strong>1.2.0 (Data Engine)</strong></p>
+				<br />
+				<div style="width: 100%; display: flex; justify-content: center;">
+					<button onclick="closeModal('about_modal')">CLOSE</button>
+				</div>
+			</div>
+		</div>
+
+		<!-- CRS Verification & Attributes Collection Modal Container -->
+		<div class="modal" id="crs_attribute_modal" onclick="closeModalOnBackdrop(event, 'crs_attribute_modal')">
+			<div class="modal-content">
+				<p class="modal_title">Verify Layer Definitions</p>
+				<hr class="hr_line"/>
+				
+				<label for="crs_selector">Coordinate Reference System (CRS)</label>
+				<select id="crs_selector">
+					<option value="EPSG:4326">WGS 84 (Standard GPS - Lat/Lng) [EPSG:4326]</option>
+					<option value="EPSG:3857">Web Mercator (Projected Metering) [EPSG:3857]</option>
+				</select>
+				
+				<label for="attr_feature_name">Feature Layer Identifier/Name</label>
+				<input type="text" id="attr_feature_name" placeholder="e.g. Catchment Sector Alpha">
+
+				<label for="attr_feature_desc">Operational Description</label>
+				<input type="text" id="attr_feature_desc" placeholder="e.g. Agricultural Zone delineation">
+
+				<br><br>
+				<div style="width: 100%; display: flex; justify-content: space-between;">
+					<button style="background-color:#e74c3c;" onclick="closeModal('crs_attribute_modal')">Discard</button>
+					<button style="background-color:#2ecc71;" onclick="commitExtractedFeatures()">Commit Feature Set</button>
+				</div>
+			</div>
+		</div>
+		
+		<script src="myscript.js"></script>
+		<script src="leaflet.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/proj4/dist/proj4.js"></script>
+		<script async src="https://cdn.jsdelivr.net/npm/opencv.js" onload="onOpenCvReady();" onerror="onOpenCvError();" type="text/javascript"></script>	
+	</body>
+</html>
